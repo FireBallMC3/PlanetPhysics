@@ -6,18 +6,22 @@ const TPS = 10000
 
 var leftText = new TextBlock(10, 20, 20, "white")
 var rightText = new TextBlock(200, 20, 20, "white")
-var planets = [new Planet(new Vector(canvas.width/2, canvas.height/2), new Vector(0, 0), 50, new PhysicsMaterial(1000), "yellow")]
+var planets = [new Planet(new Vector(canvas.width/2, canvas.height/2), new Vector(0, 0), 100, new PhysicsMaterial(1000), "yellow")]
 
 var fps = 0
 var tps = 0
 var mouseDown = false
+var rMouseDown = false
+var grabIndex = -1
 var mouseX = 0
 var mouseY = 0
+var movementX = 0
+var movementY = 0
 var bSize = 10
 var isPaused = false
 var displayVectors = false
 
-var G = 0.00001
+var G = 0.000001
 
 setInterval(tick, 1000 / TPS)
 setInterval(render, 1000 / FPS)
@@ -27,12 +31,19 @@ function tick(){
     deltaTime = performance.now() - tTime
     tTime = performance.now()
     tps = (tps * 9 + 1000 / deltaTime) / 10
+
+    if(rMouseDown && grabIndex != -1){
+        planets[grabIndex].vel.x = (planets[grabIndex].pos.x - mouseX) / 10
+        planets[grabIndex].vel.y = (planets[grabIndex].pos.y - mouseY) / 10
+    }
+
     if(isPaused){
         return
     }
     for(let i = 0; i < planets.length; i++){
         planets[i].step(planets)
     }
+    // console.log(rMouseDown, grabIndex)
 }
 rTime = 0
 function render(){
@@ -60,7 +71,7 @@ function render(){
     for(let i = 0; i < planets.length; i++){
         // console.log(planets[i])
         planets[i].draw(ctx)
-        if(displayVectors){
+        if(displayVectors || isPaused){
             planets[i].drawVel(ctx)
         }
     }
@@ -72,33 +83,52 @@ document.addEventListener("mousemove", onMove)
 document.addEventListener("mousewheel", onMouseWheel)
 document.addEventListener("keydown", onKeyDown)
 document.addEventListener("contextmenu", function(e){e.preventDefault()})
+document.addEventListener("click", onClick)
 
 function onMouseDown(e){
     // console.log(e)
     if(e.button == 0){
         mouseDown = true
     }
+    if(e.button == 2){
+        rMouseDown = true
+        for(let i = 0; i < planets.length; i++){
+            if(planets[i].mouseAction(i, planetMouseDown, e, true)){
+                return
+            }else{
+                grabIndex = -1
+            }
+        }
+    }
+}
+
+function planetMouseDown(e, index){
+    // console.log("planetMouseDown", e, index)
+    grabIndex = index
 }
 
 function onMouseUp(e){
     // console.log(e)
-    if(e.button == 0 && mouseDown){
-        onclick(e)
-    }
     if(e.button == 0){
         mouseDown = false
     }
+    if(e.button == 2){
+        rMouseDown = false
+    }
 }
 
-function onclick(e){
+function onClick(e){
     // console.log("click", e.clientX, e.clientY)
     // console.log(planets)
-    planets.push(new Planet(new Vector(e.clientX, e.clientY), new Vector(5, 0), bSize, new PhysicsMaterial(1)))
+    // console.log(e)
+    planets.push(new Planet(new Vector(e.clientX, e.clientY), new Vector(0, 0), bSize, new PhysicsMaterial(bSize/10)))
 }
 
 function onMove(e){
     mouseX = e.clientX
     mouseY = e.clientY
+    movementX = e.movementX
+    movementY = e.movementY
 }
 
 function onMouseWheel(e){
@@ -111,10 +141,10 @@ function onMouseWheel(e){
 }
 
 function onKeyDown(e){
-    console.log(e)
+    // console.log(e)
     switch(e.key){
         case " ":
-            console.log("space")
+            // console.log("space")
             isPaused = !isPaused
             break
         case "h":
@@ -136,5 +166,11 @@ function textBlockMWheel(e, index){
             // console.log("G", e.deltaY)
             G -= e.deltaY * modifier / 100
             break
+    }
+}
+
+function clearTrails(){
+    for(let i = 0; i < planets.length; i++){
+        planets[i].trail.clear()
     }
 }

@@ -7,10 +7,13 @@ class Planet{
         this.color = color
         this.V = 4/3 * Math.PI * Math.pow(this.radius, 3)
         this.M = this.V * this.physMat.density
+        this.trail = new Trail()
     }
     draw(ctx){
         // console.log("draw")
         // console.log(this)
+        this.trail.addPoint(this.pos.x, this.pos.y)
+        this.trail.draw(ctx)
         drawCircle(ctx, this.pos.x, this.pos.y, this.radius, this.color)
     }
     step(planets = null){
@@ -29,8 +32,23 @@ class Planet{
         this.pos = this.pos.sub(this.vel)
     }
     drawVel(ctx){
-        this.display = new VectorDisplay(this.pos.x, this.pos.y, this.vel.x * -10, this.vel.y * -10)
+        this.display = new VectorDisplay(this.pos.x, this.pos.y, this.vel.x * -20, this.vel.y * -20)
         this.display.draw(ctx)
+    }
+    mouseAction(index, func, event, passIndex = false){
+        // console.log("mouseAction", index, func, event, passIndex)
+        //check if mouse pos is inside the planet
+        if(mouseX > this.pos.x - this.radius && mouseX < this.pos.x + this.radius && mouseY > this.pos.y - this.radius && mouseY < this.pos.y + this.radius){
+            if (passIndex){
+                // console.log("passing index")
+                func(event, index)
+            }
+            else{
+                func(event)
+            }
+            return true
+        }
+        return false
     }
 }
 
@@ -56,6 +74,30 @@ class VectorDisplay{
         canvas_arrow(ctx, this.x, this.y, this.x + this.xDir, this.y + this.yDir)
         ctx.stroke()
         ctx.closePath()
+    }
+}
+
+class Trail{
+    constructor(color = "white"){
+        this.color = color
+        this.trail = []
+    }
+    draw(ctx){
+        ctx.beginPath()
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = 1
+        ctx.moveTo(this.trail[0].x, this.trail[0].y)
+        for (let i = 0; i < this.trail.length; i++){
+            ctx.lineTo(this.trail[i].x, this.trail[i].y)
+        }
+        ctx.stroke()
+        ctx.closePath()
+    }
+    addPoint(x, y){
+        this.trail.push(new Vector(x, y))
+    }
+    clear(){
+        this.trail = []
     }
 }
 
@@ -205,6 +247,7 @@ function canvas_arrow(context, fromx, fromy, tox, toy) {
 
 function drawCircle(ctx, x, y, radius, color = "red"){
     // console.log(x, y, radius, color)
+    radius = Math.abs(radius)
     ctx.beginPath()
     ctx.arc(x, y, radius, 0, 2*Math.PI)
     ctx.fillStyle = color
