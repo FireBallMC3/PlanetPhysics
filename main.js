@@ -18,6 +18,7 @@ var mouseY = 0
 var movementX = 0
 var movementY = 0
 var bSize = 10
+var previewSteps = 500
 var isPaused = false
 var displayVectors = false
 
@@ -45,15 +46,44 @@ function tick(){
     }
     // console.log(rMouseDown, grabIndex)
 }
+frame = 0
 rTime = 0
 function render(){
+    frame++
     deltaTime = performance.now() - rTime
     rTime = performance.now()
     fps = (fps * 9 + 1000 / deltaTime) / 10
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    if (isPaused) {
+    // create a true copy of the planets array
+        const preview = planets.map(p => p.copy());
+        // console.log(preview[0].vel);
+        let i = previewSteps;
+        while (i--) {
+            let j = preview.length;
+            while (j--) {
+            preview[j].step(preview);
+            //   console.log(preview[j].pos);
+            }
+        }
+        preview.forEach(p => p.trail.draw(ctx));
+    }
     
+    
+    for(let i = 0; i < planets.length; i++){
+        planets[i].trail.draw(ctx)
+    }
+
+    for(let i = 0; i < planets.length; i++){
+        // console.log(planets[i])
+        planets[i].draw(ctx)
+        if(displayVectors || isPaused){
+            planets[i].drawVel(ctx)
+        }
+    }
 
     rightText.x = canvas.width - 100
     rightText.setText(0, "FPS: " + Math.round(fps.toFixed(2)))
@@ -64,17 +94,10 @@ function render(){
     leftText.setText(2, "paused: " + isPaused)
     leftText.setText(3, "show vectors: " + displayVectors)
     leftText.setText(4, "bSize: " + bSize)
+    leftText.setText(5, "preview steps: " + previewSteps)
 
     rightText.draw(ctx)
     leftText.draw(ctx)
-
-    for(let i = 0; i < planets.length; i++){
-        // console.log(planets[i])
-        planets[i].draw(ctx)
-        if(displayVectors || isPaused){
-            planets[i].drawVel(ctx)
-        }
-    }
 }
 
 document.addEventListener("mousedown", onMouseDown)
@@ -135,6 +158,7 @@ function onMouseWheel(e){
     // console.log("wheel", e.deltaY)
     istrue = false
     istrue = leftText.mouseAction(1, textBlockMWheel, e, true)
+    istrue = leftText.mouseAction(5, textBlockMWheel, e, true)
     if(!istrue){
         bSize -= e.deltaY / 10
     }
@@ -165,6 +189,9 @@ function textBlockMWheel(e, index){
         case 1:
             // console.log("G", e.deltaY)
             G -= e.deltaY * modifier / 100
+            break
+        case 5:
+            previewSteps -= e.deltaY * modifier / 10
             break
     }
 }

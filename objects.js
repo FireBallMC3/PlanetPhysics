@@ -12,8 +12,8 @@ class Planet{
     draw(ctx){
         // console.log("draw")
         // console.log(this)
-        this.trail.addPoint(this.pos.x, this.pos.y)
-        this.trail.draw(ctx)
+        
+        // this.trail.draw(ctx)
         drawCircle(ctx, this.pos.x, this.pos.y, this.radius, this.color)
     }
     step(planets = null){
@@ -30,6 +30,7 @@ class Planet{
             }
         }
         this.pos = this.pos.sub(this.vel)
+        this.trail.addPoint(this.pos.x, this.pos.y)
     }
     drawVel(ctx){
         this.display = new VectorDisplay(this.pos.x, this.pos.y, this.vel.x * -20, this.vel.y * -20)
@@ -49,6 +50,9 @@ class Planet{
             return true
         }
         return false
+    }
+    copy(){
+        return new Planet(this.pos, this.vel, this.radius, this.physMat, this.color)
     }
 }
 
@@ -83,6 +87,8 @@ class Trail{
         this.trail = []
     }
     draw(ctx){
+        if(this.trail.length < 2)
+            return
         ctx.beginPath()
         ctx.strokeStyle = this.color
         ctx.lineWidth = 1
