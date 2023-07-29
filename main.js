@@ -2,11 +2,11 @@ const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
 
 const FPS = 60
-const TPS = 10000
+const TPS = 100000
 
 var leftText = new TextBlock(10, 20, 20, "white")
 var rightText = new TextBlock(200, 20, 20, "white")
-var planets = [new Planet(new Vector(canvas.width/2, canvas.height/2), new Vector(0, 0), 100, new PhysicsMaterial(1000), "yellow")]
+var planets = [new Planet(new Vector(canvas.width/2, canvas.height/2), new Vector(0, 0), 100, new PhysicsMaterial(100000), "yellow")]
 
 var fps = 0
 var tps = 0
@@ -18,14 +18,17 @@ var mouseY = 0
 var movementX = 0
 var movementY = 0
 var bSize = 10
-var previewSteps = 500
+var previewSteps = 10000
 var isPaused = false
 var displayVectors = false
 
-var G = 0.000001
+var camPos = new Vector(0, 0)
+var camZoom = 1
+
+var G = 0.00000001
 
 setInterval(tick, 1000 / TPS)
-setInterval(render, 1000 / FPS)
+setInterval(update, 1000 / FPS)
 
 tTime = 0
 function tick(){
@@ -46,6 +49,10 @@ function tick(){
     }
     // console.log(rMouseDown, grabIndex)
 }
+
+function update(){
+    requestAnimationFrame(render)
+}
 frame = 0
 rTime = 0
 function render(){
@@ -53,9 +60,16 @@ function render(){
     deltaTime = performance.now() - rTime
     rTime = performance.now()
     fps = (fps * 9 + 1000 / deltaTime) / 10
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.fillStyle = "black"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // fill the screen with a black rectangle accounting for camera position and zoom
+    ctx.fillRect(-camPos.x / camZoom - 100, -camPos.y / camZoom - 100, canvas.width / camZoom + 1000, canvas.height / camZoom + 1000)
+
+    // console.log(camPos, camZoom)
+    // ctx.setTransform(camZoom, 0, 0, camZoom, camPos, camPos)
+    // console.log(ctx.getTransform())
+    ctx.setTransform(camZoom, 0, 0, camZoom, camPos.x, camPos.y)
 
     if (isPaused) {
     // create a true copy of the planets array
@@ -85,7 +99,8 @@ function render(){
         }
     }
 
-    rightText.x = canvas.width - 100
+    
+    rightText.x = (canvas.width - 100) / camZoom
     rightText.setText(0, "FPS: " + Math.round(fps.toFixed(2)))
     rightText.setText(1, "TPS: " + Math.round(tps.toFixed(2)))
 
@@ -103,7 +118,7 @@ function render(){
 document.addEventListener("mousedown", onMouseDown)
 document.addEventListener("mouseup", onMouseUp)
 document.addEventListener("mousemove", onMove)
-document.addEventListener("mousewheel", onMouseWheel)
+document.addEventListener("wheel", onMouseWheel, {passive: false})
 document.addEventListener("keydown", onKeyDown)
 document.addEventListener("contextmenu", function(e){e.preventDefault()})
 document.addEventListener("click", onClick)
@@ -122,6 +137,9 @@ function onMouseDown(e){
                 grabIndex = -1
             }
         }
+    }
+    if(e.button == 1){
+        e.preventDefault()
     }
 }
 
@@ -144,24 +162,45 @@ function onClick(e){
     // console.log("click", e.clientX, e.clientY)
     // console.log(planets)
     // console.log(e)
-    planets.push(new Planet(new Vector(e.clientX, e.clientY), new Vector(0, 0), bSize, new PhysicsMaterial(bSize/10)))
+    planets.push(new Planet(new Vector(mouseX, mouseY), new Vector(0, 0), bSize, new PhysicsMaterial(bSize)))
 }
 
 function onMove(e){
+    // console.log(e)
     mouseX = e.clientX
     mouseY = e.clientY
     movementX = e.movementX
     movementY = e.movementY
+    //adjust mouse pos for camera
+    mouseX = (mouseX - camPos.x) / camZoom
+    mouseY = (mouseY - camPos.y) / camZoom
+    //adjust movement for camera
+    // movementX /= camZoom
+    // movementY /= camZoom
+    if(e.buttons == 4){
+        camPos.x += movementX
+        camPos.y += movementY
+        // console.log("pan", camPos)
+    }
 }
 
 function onMouseWheel(e){
-    // console.log("wheel", e.deltaY)
-    istrue = false
-    istrue = leftText.mouseAction(1, textBlockMWheel, e, true)
-    istrue = leftText.mouseAction(5, textBlockMWheel, e, true)
-    if(!istrue){
-        bSize -= e.deltaY / 10
+    if(e.ctrlKey){
+        e.preventDefault()
+        //zoom into the middle of the screen
+        camZoom -= e.deltaY / 1000
+        camPos.x += e.clientX * e.deltaY / 1000
+        camPos.y += e.clientY * e.deltaY / 1000
+        console
+        return
     }
+    console.log("wheel", e.deltaY)
+    if(
+        leftText.mouseAction(1, textBlockMWheel, e, true) ||
+        leftText.mouseAction(5, textBlockMWheel, e, true)
+    )
+        return
+    bSize -= e.deltaY / 10
 }
 
 function onKeyDown(e){
@@ -201,3 +240,11 @@ function clearTrails(){
         planets[i].trail.clear()
     }
 }
+
+// document.addEventListener(
+//     "wheel",
+//     function (e) {
+//       if (e.ctrlKey) {
+//         e.preventDefault();
+//       }
+//     },{passive: false});

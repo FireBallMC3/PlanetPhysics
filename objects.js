@@ -108,16 +108,18 @@ class Trail{
 }
 
 class Text {
-    constructor(x, y, text, color = black) {
+    constructor(x, y, text, color = black, size = 20, font = "arial") {
         this.x = x
         this.y = y
         this.text = text
         this.color = color
+        this.size = size
+        this.font = font
     }
     draw(ctx) {
         ctx.fillStyle = this.color
-        ctx.font = "20px arial"
-        ctx.fillText(this.text, this.x, this.y)
+        ctx.font = `${this.size / camZoom}px ${this.font}`
+        ctx.fillText(this.text, this.x - camPos.x / camZoom, this.y - camPos.y / camZoom)
     }
 }
 
@@ -214,18 +216,21 @@ class TextBlock {
     draw(ctx) {
         //draw every text element at the correct position
         for (let i = 0; i < this.text.length; i++) {
+            this.text[i].x = this.x
+            this.text[i].y = this.y + i * this.gap / camZoom
+            this.text[i].color = this.color
             this.text[i].draw(ctx)
         }
     }
     setText(index, str, color = this.color) {
         while (this.text.length < index+1){
-            this.text.push(new Text(this.x, this.y + this.text.length * this.gap, "Hello World!", this.color))
+            this.text.push(new Text(this.x, this.y + this.text.length * this.gap / camZoom, "Hello World!", this.color))
         }
         this.text[index].text = str
     }
     mouseAction(index, func, event, passIndex = false){
         // console.log("mouseAction", index, func, event, passIndex)
-        if(mouseY > this.y + this.gap * (index-1) && mouseY < this.y + this.gap * index){
+        if(mouseY > this.y + this.gap / camZoom * (index-1) && mouseY < this.y + this.gap * index){
             if (passIndex){
                 // console.log("passing index")
                 func(event, index)
